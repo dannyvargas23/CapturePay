@@ -1,6 +1,6 @@
-import os
-import requests
 import json
+import urllib3
+import os
 
 # Global Variables
 shopify_app_b64key = os.environ['SHOPIFY_API_KEY']
@@ -8,19 +8,20 @@ shopify_api_version = os.environ['SHOPIFY_API_VERSION']
 auth_net_url = os.environ['AUTH_NET_URL']
 auth_net_name = os.environ['AUTH_NET_NAME']
 auth_net_key = os.environ['AUTH_NET_KEY']
+http = urllib3.PoolManager()
 headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
            'Authorization': f'Basic {shopify_app_b64key}'}
 
+
 def get_data(url, headers=None):
-    req = requests.get(url, headers=headers)
-    return json.loads(req.text)
+    r = http.request('GET', url, headers=headers)
+    return json.loads(r.data)
 
 
-def post_data(url, data, headers=None):
-    body = json.dumps(data)
-    req = requests.post(url, headers=headers, data=body)
-    req.encoding = 'utf-8-sig'
-    return json.loads(req.text)
+def post_data(url, obj, headers=None):
+    data = json.dumps(obj)
+    r = http.request('POST', url, headers=headers, body=data)
+    return json.loads(r.data.decode('utf-8-sig'))
 
 
 def update_order_payment(order_amount, order_number, url, headers=None):
@@ -32,10 +33,10 @@ def update_order_payment(order_amount, order_number, url, headers=None):
             'gateway': 'manual'
         }
     }
-    body = json.dumps(obj)
-    req = requests.post(url, headers=headers, data=body)
+    data = json.dumps(obj)
+    r = http.request('POST', url, headers=headers, body=data)
     log_shopify_response(order_number, body)
-    return json.loads(req.text)
+    return json.loads(r.data)
 
 
 def log_authorize_net_response(order_number, result):
