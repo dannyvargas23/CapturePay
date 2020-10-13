@@ -8,9 +8,11 @@ shopify_api_version = os.environ['SHOPIFY_API_VERSION']
 auth_net_url = os.environ['AUTH_NET_URL']
 auth_net_name = os.environ['AUTH_NET_NAME']
 auth_net_key = os.environ['AUTH_NET_KEY']
-http = urllib3.PoolManager()
-headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
+headers = {'Content-Type': 'application/json',
            'Authorization': f'Basic {shopify_app_b64key}'}
+
+# handle connection pooling and thread safety
+http = urllib3.PoolManager()
 
 
 def get_data(url, headers=None):
