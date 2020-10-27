@@ -34,7 +34,7 @@ def update_order_payment(order_amount, order_number, url, headers=None):
         }
     }
     r = http.request('POST', url, headers=headers, body=json.dumps(payload))
-    log_shopify_response(order_number, payload)
+    log_shopify_response(order_number, json.loads(r.data))
     return json.loads(r.data)
 
 
