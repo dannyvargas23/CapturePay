@@ -3,12 +3,12 @@ import urllib3
 import os
 
 # Global Variables
-shopify_app_b64key = os.environ.get('SHOPIFY_API_KEY')
+access_token = os.environ.get('SHOPIFY_API_KEY')
 shopify_api_version = os.environ.get('SHOPIFY_API_VERSION', '2020-10')
 auth_net_url = os.environ.get('AUTH_NET_URL')
 auth_net_name = os.environ.get('AUTH_NET_NAME')
 auth_net_key = os.environ.get('AUTH_NET_KEY')
-headers = {'Content-Type': 'application/json', 'X-Shopify-Access-Token': ''}
+headers = {'Content-Type': 'application/json', 'X-Shopify-Access-Token': f'{access_token}'}
 
 # Handle connection pooling and thread safety
 http = urllib3.PoolManager()
