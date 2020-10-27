@@ -3,15 +3,14 @@ import urllib3
 import os
 
 # Global Variables
-shopify_app_b64key = os.environ['SHOPIFY_API_KEY']
-shopify_api_version = os.environ['SHOPIFY_API_VERSION']
-auth_net_url = os.environ['AUTH_NET_URL']
-auth_net_name = os.environ['AUTH_NET_NAME']
-auth_net_key = os.environ['AUTH_NET_KEY']
-headers = {'Content-Type': 'application/json',
-           'Authorization': f'Basic {shopify_app_b64key}'}
+shopify_app_b64key = os.environ.get('SHOPIFY_API_KEY')
+shopify_api_version = os.environ.get('SHOPIFY_API_VERSION', '2020-10')
+auth_net_url = os.environ.get('AUTH_NET_URL')
+auth_net_name = os.environ.get('AUTH_NET_NAME')
+auth_net_key = os.environ.get('AUTH_NET_KEY')
+headers = {'Content-Type': 'application/json', 'X-Shopify-Access-Token': ''}
 
-# handle connection pooling and thread safety
+# Handle connection pooling and thread safety
 http = urllib3.PoolManager()
 
 
@@ -21,13 +20,12 @@ def get_data(url, headers=None):
 
 
 def post_data(url, obj, headers=None):
-    data = json.dumps(obj)
-    r = http.request('POST', url, headers=headers, body=data)
+    r = http.request('POST', url, headers=headers, body=json.dumps(obj))
     return json.loads(r.data.decode('utf-8-sig'))
 
 
 def update_order_payment(order_amount, order_number, url, headers=None):
-    obj = {
+    payload = {
         'transaction': {
             'currency': 'USD',
             'amount': float(order_amount),
@@ -35,9 +33,8 @@ def update_order_payment(order_amount, order_number, url, headers=None):
             'gateway': 'manual'
         }
     }
-    data = json.dumps(obj)
-    r = http.request('POST', url, headers=headers, body=data)
-    log_shopify_response(order_number, body)
+    r = http.request('POST', url, headers=headers, body=json.dumps(payload))
+    log_shopify_response(order_number, payload)
     return json.loads(r.data)
 
 
@@ -72,6 +69,7 @@ def log_shopify_response(order_number, result):
     }
     print(json.dumps(log))
 
+
 def lambda_handler(event, context):
     shop_api_url = f"https://{event['shop_domain']}/admin/api/{shopify_api_version}/orders/{event['order_id']}"
     transaction_url = f'{shop_api_url}/transactions.json'
@@ -96,7 +94,7 @@ def lambda_handler(event, context):
     metadata = [md for md in result['metafields'] if md['key'] == 'authorize.net_auth_id']
 
     if len(metadata) > 0:
-        obj = {
+        payload = {
             'createTransactionRequest': {
                 'merchantAuthentication': {
                     'name': auth_net_name,
@@ -112,7 +110,7 @@ def lambda_handler(event, context):
                 }
             }
         }
-        result = post_data(auth_net_url, obj, headers)
+        result = post_data(auth_net_url, payload, headers)
         print('ran')
         log_authorize_net_response(event['order_number'], result)
         if result['messages']['resultCode'] == 'Ok' and result['transactionResponse']['responseCode'] == '1' and \
